@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bus Tracker</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    body { margin: 0; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
+    #bar { padding: 10px 14px; background: #1a73e8; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+    #bar a { color: #fff; }
+    #info { padding: 8px 14px; font-size: 14px; line-height: 1.6; }
+    #map { flex: 1; }
+    .stale { color: #d93025; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div id="bar"><b id="hi"></b><a href="#" id="out">Logout</a></div>
+  <div id="info">Loading...</div>
+  <div id="map"></div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const logout = () => { localStorage.clear(); location.href = 'login.html'; };
+    if (!token) logout();
+    hi.textContent = localStorage.getItem('name');
+    out.onclick = logout;
+
+    const map = L.map('map').setView([12.97, 77.59], 12);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+
+    const markers = {};
+    let fitted = false;
+
+    const ago = t => {
+      const s = Math.round((Date.now() - t) / 1000);
+      return s < 60 ? s + 's ago' : Math.round(s / 60) + ' min ago';
+    };
+
+    async function load() {
+      try {
+        const res = await fetch('/api/buses', { headers: { Authorization: 'Bearer ' + token } });
+        if (res.status === 401) return logout();
+        const buses = await res.json();
+
+        info.innerHTML = buses.map(b => {
+          if (!b.location) return `${b.busNumber} (${b.routeName}): no data yet`;
+          const stale = Date.now() - b.location.updatedAt > 30000;
+          return `${b.busNumber} (${b.routeName}): <span class="${stale ? 'stale' : ''}">updated ${ago(b.location.updatedAt)}</span>`;
+        }).join('<br>');
+
+        const points = [];
+        buses.filter(b => b.location).forEach(b => {
+          const p = [b.location.lat, b.location.lng];
+          const tip = `${b.busNumber} · ${ago(b.location.updatedAt)}`;
+          points.push(p);
+          if (markers[b.id]) markers[b.id].setLatLng(p).setTooltipContent(tip);
+          else markers[b.id] = L.marker(p).addTo(map).bindTooltip(tip, { permanent: true });
+        });
+
+        if (!fitted && points.length) { map.fitBounds(points, { maxZoom: 16, padding: [40, 40] }); fitted = true; }
+      } catch {
+        info.textContent = 'Connection problem, retrying...';
+      }
+    }
+
+    load();
+    setInterval(load, 5000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Driver</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 30px; }
+    button { font-size: 22px; padding: 20px 40px; border: 0; border-radius: 8px; color: #fff; background: #1a73e8; }
+    button.on { background: #d93025; }
+  </style>
+</head>
+<body>
+  <h2 id="hi"></h2>
+  <button id="btn">Start Trip</button>
+  <p id="status">Not sharing</p>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) location.href = 'login.html';
+    hi.textContent = localStorage.getItem('name');
+
+    let timer = null, lock = null;
+
+    const send = () => navigator.geolocation.getCurrentPosition(async ({ coords }) => {
+      try {
+        const res = await fetch('/api/location', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+          body: JSON.stringify({ lat: coords.latitude, lng: coords.longitude, speed: (coords.speed || 0) * 3.6 }), // m/s -> km/h
+        });
+        if (res.status === 401 || res.status === 403) return (location.href = 'login.html');
+        status.textContent = 'Sharing. Last sent ' + new Date().toLocaleTimeString();
+      } catch {
+        status.textContent = 'No internet, retrying...';
+      }
+    }, e => (status.textContent = 'GPS error: ' + e.message), { enableHighAccuracy: true, timeout: 10000 });
+
+    const getLock = async () => {
+      try { lock = await navigator.wakeLock.request('screen'); } catch {}
+    };
+
+    btn.onclick = () => {
+      if (timer) {                       // stop trip
+        clearInterval(timer); timer = null; lock?.release();
+        btn.textContent = 'Start Trip'; btn.className = '';
+        status.textContent = 'Not sharing';
+      } else {                           // start trip
+        send(); timer = setInterval(send, 5000); getLock();
+        btn.textContent = 'Stop Trip'; btn.className = 'on';
+      }
+    };
+
+    // Wake lock is released when the tab is hidden, so re-acquire it on return
+    document.onvisibilitychange = () => timer && document.visibilityState === 'visible' && getLock();
+  </script>
+</body>
+</html>

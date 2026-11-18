@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bus Tracker - Login</title>
+  <style>
+    body { font-family: sans-serif; display: grid; place-items: center; height: 100vh; margin: 0; background: #f2f4f7; }
+    form { background: #fff; padding: 24px; border-radius: 8px; width: 260px; box-shadow: 0 2px 8px #0002; }
+    input, button { width: 100%; padding: 10px; margin-top: 10px; box-sizing: border-box; font-size: 16px; }
+    button { background: #1a73e8; color: #fff; border: 0; border-radius: 4px; }
+    #err { color: red; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <form id="f">
+    <h2>Bus Tracker</h2>
+    <input id="loginId" placeholder="Login ID" required>
+    <input id="password" type="password" placeholder="Password" required>
+    <button>Login</button>
+    <p id="err"></p>
+  </form>
+
+  <script>
+    f.onsubmit = async e => {
+      e.preventDefault();
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ loginId: loginId.value.trim(), password: password.value }),
+      });
+      const data = await res.json();
+      if (!res.ok) return (err.textContent = data.msg);
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('name', data.name);
+      location.href = data.role === 'driver' ? 'driver.html' : 'dashboard.html';
+    };
+  </script>
+</body>
+</html>
