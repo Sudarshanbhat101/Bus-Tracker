@@ -6,8 +6,8 @@ const SECRET = process.env.JWT_SECRET || 'change-this-secret';
 // ---------- Hardcoded data (prototype) ----------
 const users = [
     { loginId: 'admin', password: 'admin123', role: 'admin', name: 'Admin' },
-    { loginId: 'S101', password: '1234', role: 'student', name: 'Student 1', busId: 'bus1' },
-    { loginId: 'S102', password: '1234', role: 'student', name: 'Student 2', busId: 'bus2' },
+    { loginId: '25BTREC013', password: '1234', role: 'student', name: 'Student 1', busId: 'bus1' },
+    { loginId: '25BTREC009', password: '1234', role: 'student', name: 'Student 2', busId: 'bus2' },
     { loginId: 'D1', password: '1234', role: 'driver', name: 'Driver 1', busId: 'bus1' },
     { loginId: 'D2', password: '1234', role: 'driver', name: 'Driver 2', busId: 'bus2' },
 ];
